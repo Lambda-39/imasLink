@@ -9,12 +9,12 @@
         @* 演出：開演前のカーテン（ローディング）ですわ *@
         <div class="loading-overlay">
             <div class="spinner"></div>
-            <p>アイドルたちが準備中ですわ。少々お待ちになって……</p>
+            <p>ローディング中……</p>
         </div>
     }
 
     <div class="control-panel">
-        <h3>アイドル相関図・博覧会</h3>
+        <h3>アイドル相関図</h3>
         <div class="controls">
             <div class="control-group">
                 <label>ブランド選考：</label>
@@ -32,8 +32,14 @@
                 @* 演出：入力するたびに即座に反応いたしますわ *@
                 <input type="text" @oninput="OnSearchInput" class="form-control w-auto d-inline" placeholder="アイドル名を入力..." />
             </div>
+            <div class="control-group">
+                <button class="btn btn-outline-primary ms-2" @onclick="RerunLayout">
+                    ✨ 再ランダム配置
+                </button>
+            </div>
+            
         </div>
-        <p class="status-text">現在：@AllIdols.Count 人のアイドルが在籍中ですわ</p>
+        <p class="status-text">現在：@AllIdols.Count 人のアイドルが在籍中</p>
     </div>
 
     <div id="cy"></div>
@@ -96,5 +102,11 @@
     {
         // 演出：JavaScript側に名前を伝え、ハイライトさせますわ
         await JSRuntime.InvokeVoidAsync("searchAndHighlight", e.Value?.ToString());
+    }
+
+    private async Task RerunLayout()
+    {
+        // 先ほど作成した JavaScript の関数を呼び出しますわ
+        await JSRuntime.InvokeVoidAsync("rerunLayout");
     }
 }
