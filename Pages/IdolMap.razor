@@ -34,8 +34,15 @@
             </div>
             <div class="control-group">
                 <button class="btn btn-outline-primary ms-2" @onclick="RerunLayout">
-                    ✨ 再ランダム配置
+                    ✨ 整理して再配置
                 </button>
+            </div>
+            <div class="control-group">
+                <label>表示モード：</label>
+                <select @onchange="OnModeChanged" class="form-select w-auto d-inline">
+                    <option value="Standard">通常モード</option>
+                    <option value="InterBrand">同ブランド同士を非表示</option>
+                </select>
             </div>
             
         </div>
@@ -50,6 +57,9 @@
     private List<string> Brands = new();
     private bool _isLoading = true;
     private bool _isGraphDrawn = false;
+
+    private string _currentMode = "Standard";
+    private string _selectedBrand = "All";
 
     protected override async Task OnInitializedAsync()
     {
@@ -95,7 +105,28 @@
 
     private async Task OnFilterChanged(ChangeEventArgs e)
     {
-        await JSRuntime.InvokeVoidAsync("applyBrandFilter", e.Value?.ToString());
+        _selectedBrand = e.Value?.ToString() ?? "All";
+        await ApplyCurrentFilter();
+    }
+
+    private async Task OnModeChanged(ChangeEventArgs e)
+    {
+        _currentMode = e.Value?.ToString() ?? "Standard";
+        await ApplyCurrentFilter();
+    }
+
+    private async Task ApplyCurrentFilter()
+    {
+        if (_currentMode == "InterBrand" && _selectedBrand != "All" && _selectedBrand != "MutualOnly")
+        {
+            // 新しい「架け橋」フィルターを呼び出しますわ
+            await JSRuntime.InvokeVoidAsync("applyIncomingInterBrandFilter", _selectedBrand);
+        }
+        else
+        {
+            // 通常のフィルターですわ
+            await JSRuntime.InvokeVoidAsync("applyBrandFilter", _selectedBrand);
+        }
     }
 
     private async Task OnSearchInput(ChangeEventArgs e)
