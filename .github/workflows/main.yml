@@ -4,6 +4,9 @@ on:
   push:
     branches: [ master ] # ‚¨ì—l‚Ìƒuƒ‰ƒ“ƒ`–¼‚É‡‚í‚¹‚Ä‚¨‚è‚Ü‚·‚í
 
+permissions:
+  contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
