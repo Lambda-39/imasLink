@@ -263,3 +263,70 @@ window.rerunLayout = () => {
     // 新たな運命（randomize: true）に導きますわ
     cy.elements(':visible').layout(getFCoSEOptions(false)).run();
 };
+
+
+/**
+* 演出補助：他ブランドへの架け橋フィルター
+* 指定したブランドAから、他のブランドへ向いている矢印とその相手だけを表示いたしますわ
+*/
+window.applyInterBrandFilter = (brandA) => {
+    if (!window.cyInstance) return;
+    const cy = window.cyInstance;
+    currentFilter = brandA; // 状態を記憶いたします
+
+    // 一度全員を舞台袖（非表示）へ
+    cy.elements().hide();
+
+    // 1. 基点となるブランドAのアイドルたちを抽出
+    const sourceNodes = cy.nodes(`[brand = "${brandA}"]`);
+
+    // 2. ブランドAから出ているすべての矢印（エッジ）のうち、
+    //    「相手が自分と同じブランドではない」ものだけを抽出いたします
+    const outboundEdges = sourceNodes.outgoers('edge').filter(edge => {
+        return edge.target().data('brand') !== brandA;
+    });
+
+    // 3. その矢印の先にいる、他ブランドのアイドルたちを特定
+    const targetNodes = outboundEdges.targets();
+
+    // 4. 「ブランドAの面々」「外へ向かう矢印」「他ブランドの面々」だけを華やかに表示
+    sourceNodes.show();
+    outboundEdges.show();
+    targetNodes.show();
+
+    // 5. 強化された設定で、優雅に再配置いたしますわ
+    cy.elements(':visible').layout(getFCoSEOptions(true)).run();
+};
+
+/**
+* 演出補助：ブランドAへの注目度フィルター
+* 外のブランドから、ブランドAのアイドルたちへ向けられた矢印のみを可視化いたします
+*/
+window.applyIncomingInterBrandFilter = (brandA) => {
+    if (!window.cyInstance) return;
+    const cy = window.cyInstance;
+    currentFilter = brandA;
+
+    // 一度、舞台の照明をすべて落としますわ（非表示）
+    cy.elements().hide();
+
+    // 1. 舞台の主役、ブランドAのアイドルたち（ターゲット）を特定
+    const targetNodes = cy.nodes(`[brand = "${brandA}"]`);
+
+    // 2. 彼女たちに「入ってくる」矢印（インカミング・エッジ）のうち、
+    //    「送り主がブランドAではない」ものだけを厳選いたしますわ
+    const inboundEdges = targetNodes.incomers('edge').filter(edge => {
+        return edge.source().data('brand') !== brandA;
+    });
+
+    // 3. その矢印を放っている、他ブランドのアイドルたち（ソース）を特定
+    const sourceNodes = inboundEdges.sources();
+
+    // 4. 「主役のブランドA」「外からの矢印」「熱視線を送る他ブランドの面々」を点灯させます
+    targetNodes.show();
+    inboundEdges.show();
+    sourceNodes.show();
+
+    // 5. 優雅な配置で、関係性を際立たせますわ
+    cy.elements(':visible').layout(getFCoSEOptions(true)).run();
+};
