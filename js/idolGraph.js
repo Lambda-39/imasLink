@@ -12,27 +12,47 @@ const BRAND_COLORS = {
     'Other': '#ccc'
 };
 
+// 劇場の「現在の選考（フィルター）」を記憶する日記帳ですわ
+let currentFilter = "All";
+
 /**
  * 物理演算（fCoSE）の設定
- * ウィンドウを贅沢に使い、重力から解放された広大な配置ですわ
+ * 島同士の「独立性」を極限まで高めた、広大な舞台設計ですわ
  */
 const getFCoSEOptions = (isFilter = false) => ({
     name: 'fcose',
-    quality: 'proof',
+    quality: 'default',
     randomize: !isFilter,
     animate: true,
     animationDuration: 1500,
     fit: true,
-    padding: 70,
-    nodeRepulsion: 150000,
-    idealEdgeLength: (edge) => edge.hasClass('mutual') ? 120 : 450,
-    gravity: 0.05,
+    padding: 100, // 少し余裕を持たせますわ
+
+    // --- 演出：島の分離を強化する四柱の魔法 ---
+
+    // 1. ノード同士の反発力を大幅に強化（150,000 → 450,000）
+    // これで密集地帯に風が通り、お顔が重なりにくくなりますわ
+    nodeRepulsion: 450000,
+
+    // 2. 中心へ引き寄せる重力を極限まで弱めます（0.05 → 0.01）
+    // 島同士が中央に集まろうとするのを防ぎ、外側へ広がるのを許容いたします
+    gravity: 0.01,
+
+    // 3. 独立した「島」同士の隙間を大幅に拡大（120 → 300）
+    // 関係性のないグループ同士に、優雅な「中庭」を作りますわ
+    tile: true,
+    tilingPaddingVertical: 300,
+    tilingPaddingHorizontal: 300,
+
+    // 4. 絆の長さのメリハリ
+    // 相互フォロー（mutual）は短く、片思い（通常）は少し長めに保ちますわ
+    idealEdgeLength: (edge) => edge.hasClass('mutual') ? 100 : 350,
+
+    // ------------------------------------------
+
     numIter: 5000,
     uniformNodeDimensions: false,
-    packComponents: true,
-    tile: true,
-    tilingPaddingVertical: 120,
-    tilingPaddingHorizontal: 120
+    packComponents: true, // 島を独立してパッキングいたしますわ
 });
 
 /**
@@ -209,22 +229,37 @@ window.searchAndHighlight = (name) => {
  * 演出補助：選考（フィルター）
  */
 window.applyBrandFilter = (brand) => {
-    if (!window.cyInstance) return;
+    currentFilter = brand; // ここで選考内容を記憶いたします
     const cy = window.cyInstance;
-    cy.elements().show();
+    if (!cy) return;
 
-    if (brand === "All") {
-        // 何もしませんわ
-    } else if (brand === "MutualOnly") {
+    cy.elements().show();
+    if (brand === "MutualOnly") {
         cy.elements().hide();
         const mutualEdges = cy.edges('.mutual');
         mutualEdges.show();
         mutualEdges.connectedNodes().show();
-    } else {
+    } else if (brand !== "All") {
         cy.elements().hide();
         const nodes = cy.nodes(`[brand = "${brand}"]`);
         nodes.show();
         nodes.connectedEdges().show();
     }
+
+    // フィルター時は位置を変えない（randomize: false）ようにいたしますわ
     cy.elements(':visible').layout(getFCoSEOptions(true)).run();
+};
+
+/**
+* 演出補助：再ランダム配置
+*/
+window.rerunLayout = () => {
+    const cy = window.cyInstance;
+    if (!cy) return;
+
+
+    // 【ここが重要ですわ！】
+    // 全員ではなく、現在見えている（フィルターを通り抜けた）アイドルたちだけを
+    // 新たな運命（randomize: true）に導きますわ
+    cy.elements(':visible').layout(getFCoSEOptions(false)).run();
 };
