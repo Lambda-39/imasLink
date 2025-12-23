@@ -25,6 +25,9 @@ jobs:
       - name: Copy index.html to 404.html
         run: cp release/wwwroot/index.html release/wwwroot/404.html
 
+      - name: Add .nojekyll
+        run: touch release/wwwroot/.nojekyll  # © ‚±‚ê‚ª–‚–@‚ÌD‚Å‚·‚íI
+
       # GitHub Pages‚Ö‚ÌŒöŠJì‹Æ‚Å‚·‚í
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
