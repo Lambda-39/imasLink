@@ -20,7 +20,7 @@
                 <label>ブランド：</label>
                 <select @onchange="OnFilterChanged" class="form-select w-auto d-inline">
                     <option value="All">全て表示</option>
-                    <option value="MutualOnly">両想いのみ</option>
+                    <option value="MutualOnly">双方向のみ</option>
                     @foreach (var brand in Brands)
                     {
                         <option value="@brand">@brand</option>
