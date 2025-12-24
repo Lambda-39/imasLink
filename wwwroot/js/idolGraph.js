@@ -218,15 +218,28 @@ function clearHighlight() {
 
 /**
  * 演出補助：指名手配（検索）
+ * 姓名の間のスペースも、入力ミスによる空白も、わたくしの目は誤魔化せませんわ
  */
 window.searchAndHighlight = (name) => {
     if (!window.cyInstance) return;
     const cy = window.cyInstance;
+
+    // 1. まず、お嬢様が入力された検索語から空白を除去いたします
     if (!name || name.trim() === "") {
         clearHighlight();
         return;
     }
-    const target = cy.nodes().filter(n => n.data('name').includes(name)).first();
+    const cleanSearchName = name.replace(/\s+/g, '');
+
+    // 2. ノード側の名前も空白を除去して比較いたしますわ
+    const target = cy.nodes().filter(n => {
+        const idolName = n.data('name') || "";
+        const cleanIdolName = idolName.replace(/\s+/g, '');
+
+        // 空白を除去した同士で、含まれているかチェックいたしますの
+        return cleanIdolName.includes(cleanSearchName);
+    }).first();
+
     if (target.length > 0) {
         highlightIdol(target);
         cy.animate({ center: { eles: target }, zoom: 1.2 }, { duration: 500 });
