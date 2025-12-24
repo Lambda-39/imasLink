@@ -101,17 +101,25 @@ window.initIdolGraph = (data) => {
                     'z-index': 999
                 }
             },
-            // --- 絆（エッジ）の正装 ---
+            // --- 絆（エッジ）の正装を、ブランドの色に染め上げますわ ---
             {
                 selector: 'edge',
                 style: {
                     'width': 3,
-                    'arrow-scale': 1.8,      // 巨大な三角形の誇りですわ
-                    'line-color': '#666',
+                    'arrow-scale': 1.8,
+                    // 演出：線の色を、送り主（source）のブランドカラーに合わせますわ
+                    'line-color': (edge) => {
+                        const sourceBrand = edge.source().data('brand');
+                        return BRAND_COLORS[sourceBrand] || BRAND_COLORS['Other'];
+                    },
                     'target-arrow-shape': 'triangle',
-                    'target-arrow-color': '#666',
+                    // 演出：矢印の先端（ターゲット側）の色も揃えるのが淑女の嗜みですわ
+                    'target-arrow-color': (edge) => {
+                        const sourceBrand = edge.source().data('brand');
+                        return BRAND_COLORS[sourceBrand] || BRAND_COLORS['Other'];
+                    },
                     'curve-style': 'bezier',
-                    'opacity': 0.8,
+                    'opacity': 0.6, // 色を際立たせるため、少し濃いめに調整いたしました
                     'transition-property': 'width, opacity, line-color',
                     'transition-duration': '0.3s'
                 }
@@ -265,69 +273,54 @@ window.rerunLayout = () => {
 };
 
 
-/**
-* 演出補助：他ブランドへの架け橋フィルター
-* 指定したブランドAから、他のブランドへ向いている矢印とその相手だけを表示いたしますわ
-*/
-window.applyInterBrandFilter = (brandA) => {
-    if (!window.cyInstance) return;
-    const cy = window.cyInstance;
-    currentFilter = brandA; // 状態を記憶いたします
 
-    // 一度全員を舞台袖（非表示）へ
-    cy.elements().hide();
-
-    // 1. 基点となるブランドAのアイドルたちを抽出
-    const sourceNodes = cy.nodes(`[brand = "${brandA}"]`);
-
-    // 2. 出発点のアイドルから伸びるすべての矢印のうち、
-    //    「相手が自分（ソース）と同じブランドではない」ものだけを抽出いたしますわ
-    const outboundEdges = sourceNodes.outgoers('edge').filter(edge => {
-        // 矢印の根元（source）のブランドと、先（target）のブランドを突き合わせますの
-        return edge.target().data('brand') !== edge.source().data('brand');
-    });
-
-    // 3. その矢印の先にいる、他ブランドのアイドルたちを特定
-    const targetNodes = outboundEdges.targets();
-
-    // 4. 「ブランドAの面々」「外へ向かう矢印」「他ブランドの面々」だけを華やかに表示
-    sourceNodes.show();
-    outboundEdges.show();
-    targetNodes.show();
-
-    // 5. 強化された設定で、優雅に再配置いたしますわ
-    cy.elements(':visible').layout(getFCoSEOptions(true)).run();
-};
 
 /**
 * 演出補助：ブランドAへの注目度フィルター
-* 外のブランドから、ブランドAのアイドルたちへ向けられた矢印のみを可視化いたします
+* 外のブランドからブランドAへ、あるいは両想いの絆を漏れなく抽出いたします
 */
 window.applyIncomingInterBrandFilter = (brandA) => {
     if (!window.cyInstance) return;
     const cy = window.cyInstance;
     currentFilter = brandA;
 
-    // 一度、舞台の照明をすべて落としますわ（非表示）
+    // 1. 舞台の浄化（すべてを非表示に）
     cy.elements().hide();
 
-    // 1. 舞台の主役、ブランドAのアイドルたち（ターゲット）を特定
-    const targetNodes = cy.nodes(`[brand = "${brandA}"]`);
+    // 2. 絆（エッジ）の厳選
+    const relevantEdges = cy.edges().filter(edge => {
+        const source = edge.source();
+        const target = edge.target();
+        const sBrand = source.data('brand');
+        const tBrand = target.data('brand');
 
-    // 2. 彼女たちに「入ってくる」矢印（インカミング・エッジ）のうち、
-    //    「送り主がブランドAではない」ものだけを厳選いたしますわ
-    const inboundEdges = targetNodes.incomers('edge').filter(edge => {
-        return edge.source().data('brand') !== brandA;
+        // 【ここがお嬢様の仰るポイントですわ！】
+        // 送り主と受け取り手のブランドが異なっているものだけを対象にいたします
+        if (sBrand === tBrand) return false;
+
+        // 次に、その絆が「ブランドA」に関わっているかチェックいたします
+        const involvesBrandA = (sBrand === brandA || tBrand === brandA);
+        if (!involvesBrandA) return false;
+
+        // 矢印を採用する条件ですわ
+        if (edge.hasClass('mutual')) {
+            return true; // 両想いは、データの向きを問わず表示いたします
+        } else {
+            // 片想いなら、到達点（target）がブランドAであるものだけ
+            // ※ここでも「変数」ではなく「到達点のデータ」を尊重するなら tBrand === brandA ですわ
+            return tBrand === brandA;
+        }
     });
 
-    // 3. その矢印を放っている、他ブランドのアイドルたち（ソース）を特定
-    const sourceNodes = inboundEdges.sources();
+    // 3. 関連するアイドルたちの特定
+    const targetNodes = cy.nodes(`[brand = "${brandA}"]`);
+    const sourceNodes = relevantEdges.connectedNodes().filter(n => n.data('brand') !== brandA);
 
-    // 4. 「主役のブランドA」「外からの矢印」「熱視線を送る他ブランドの面々」を点灯させます
+    // 4. 点灯（表示）
     targetNodes.show();
-    inboundEdges.show();
     sourceNodes.show();
+    relevantEdges.show();
 
-    // 5. 優雅な配置で、関係性を際立たせますわ
+    // 5. 優雅な配置
     cy.elements(':visible').layout(getFCoSEOptions(true)).run();
 };
