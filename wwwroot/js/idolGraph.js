@@ -280,10 +280,11 @@ window.applyInterBrandFilter = (brandA) => {
     // 1. 基点となるブランドAのアイドルたちを抽出
     const sourceNodes = cy.nodes(`[brand = "${brandA}"]`);
 
-    // 2. ブランドAから出ているすべての矢印（エッジ）のうち、
-    //    「相手が自分と同じブランドではない」ものだけを抽出いたします
+    // 2. 出発点のアイドルから伸びるすべての矢印のうち、
+    //    「相手が自分（ソース）と同じブランドではない」ものだけを抽出いたしますわ
     const outboundEdges = sourceNodes.outgoers('edge').filter(edge => {
-        return edge.target().data('brand') !== brandA;
+        // 矢印の根元（source）のブランドと、先（target）のブランドを突き合わせますの
+        return edge.target().data('brand') !== edge.source().data('brand');
     });
 
     // 3. その矢印の先にいる、他ブランドのアイドルたちを特定
