@@ -19,10 +19,10 @@ let currentFilter = "All";
  * 物理演算（fCoSE）の設定
  * 島同士の「独立性」を極限まで高めた、広大な舞台設計ですわ
  */
-const getFCoSEOptions = (isFilter = false) => ({
+const getFCoSEOptions = (random = false) => ({
     name: 'fcose',
     quality: 'default',
-    randomize: !isFilter,
+    randomize: random,
     animate: true,
     animationDuration: 1500,
     fit: true,
@@ -153,7 +153,7 @@ window.initIdolGraph = (data) => {
                 node.style({ 'width': bSize, 'height': bSize });
             });
 
-            cy.layout(getFCoSEOptions(false)).run();
+            cy.layout(getFCoSEOptions(true)).run();
 
             // --- 右クリックドラッグによる平行移動の魔法 ---
             cy.on('cxtdrag', (e) => {
@@ -261,7 +261,7 @@ window.rerunLayout = () => {
     // 【ここが重要ですわ！】
     // 全員ではなく、現在見えている（フィルターを通り抜けた）アイドルたちだけを
     // 新たな運命（randomize: true）に導きますわ
-    cy.elements(':visible').layout(getFCoSEOptions(false)).run();
+    cy.elements(':visible').layout(getFCoSEOptions(true)).run();
 };
 
 
