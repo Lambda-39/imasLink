@@ -19,41 +19,64 @@ let currentFilter = "All";
  * 物理演算（fCoSE）の設定
  * 島同士の「独立性」を極限まで高めた、広大な舞台設計ですわ
  */
-const getFCoSEOptions = (random = false) => ({
-    name: 'fcose',
-    quality: 'default',
-    randomize: random,
-    animate: true,
-    animationDuration: 1500,
-    fit: true,
-    padding: 100, // 少し余裕を持たせますわ
 
-    // --- 演出：島の分離を強化する四柱の魔法 ---
+const getFCoSEOptions = (random = false) => {
+    // 現在の舞台が「全員表示」かどうかを判断いたします
+    const isAllMode = (currentFilter === "All");
 
-    // 1. ノード同士の反発力を大幅に強化（150,000 → 450,000）
-    // これで密集地帯に風が通り、お顔が重なりにくくなりますわ
-    nodeRepulsion: 450000,
+    return {
+        name: 'fcose',
+        quality: 'default',
+        randomize: random,
+        animate: true,
+        animationDuration: 1500,
+        fit: true,
+        padding: 100,
 
-    // 2. 中心へ引き寄せる重力を極限まで弱めます（0.05 → 0.01）
-    // 島同士が中央に集まろうとするのを防ぎ、外側へ広がるのを許容いたします
-    gravity: 0.01,
+        // 1. 全員表示時は、ノード同士が反発し合う力を極限まで高め、重なりを根絶いたします
+        nodeRepulsion: isAllMode ? 0 : 450000,
 
-    // 3. 独立した「島」同士の隙間を大幅に拡大（120 → 300）
-    // 関係性のないグループ同士に、優雅な「中庭」を作りますわ
-    tile: true,
-    tilingPaddingVertical: 300,
-    tilingPaddingHorizontal: 300,
+        // 2. 中心へ引き寄せる力を弱め、舞台を広く、大きく使いますわ
+        gravity: isAllMode ? 0.001 : 0.01,
 
-    // 4. 絆の長さのメリハリ
-    // 相互フォロー（mutual）は短く、片思い（通常）は少し長めに保ちますわ
-    idealEdgeLength: (edge) => edge.hasClass('mutual') ? 100 : 350,
+        // 3. 島同士の隙間も広げ、ブランドごとの独立性を守ります
+        tile: true,
+        tilingPaddingVertical: isAllMode ? 1000 : 300,
+        tilingPaddingHorizontal: isAllMode ? 1000 : 300,
 
-    // ------------------------------------------
+        /**
+         * 絆の長さ（引力）の調律
+         * 全員表示時：人気者は「空間」を、レアな絆は「親密さ」を！
+         */
+        idealEdgeLength: (edge) => {
+            // 1. 両想いは「特別な絆」ですので、常に密接（80 * 2 = 160px）にいたしますわ
+            if (edge.hasClass('mutual')) {
+                return isAllMode ? 160 : 80;
+            }
 
-    numIter: 5000,
-    uniformNodeDimensions: false,
-    packComponents: true, // 島を独立してパッキングいたしますわ
-});
+            let baseLength = 400; // 片思いの基本距離
+
+            if (isAllMode) {
+                baseLength *= 2; // 全員表示時は 800px からスタートいたします
+
+                // 2. 【ここが修正ポイントですわ！】
+                // indegree() ではなく degree() を使うことで、
+                // 統合されたエッジの「見えない向き」も考慮した人気度を測りますの。
+                const targetPopularity = edge.target().degree() - 4;
+
+                // 3. 注目されている子（degreeが高い）ほど距離を離し、空間を確保いたします。
+                // 逆に degree が低い子への矢印は短く保たれ、強く引き寄せられますわ。
+                baseLength += (targetPopularity * 20);
+            }
+
+            return baseLength;
+        },
+
+        // 全員表示時は計算量を増やし、最適解へ辿り着くまでの時間を確保いたします
+        numIter: isAllMode ? 15000 : 5000,
+        packComponents: true,
+    };
+};
 
 /**
  * 劇場の開演（初期化）
