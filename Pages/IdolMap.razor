@@ -6,7 +6,6 @@
 <div class="theater-container">
     @if (_isLoading)
     {
-        @* 演出：開演前のカーテン（ローディング）ですわ *@
         <div class="loading-overlay">
             <div class="spinner"></div>
             <p>ローディング中……</p>
@@ -20,7 +19,6 @@
                 <label>ブランド：</label>
                 <select @onchange="OnFilterChanged" class="form-select w-auto d-inline">
                     <option value="All">全て表示</option>
-                    <option value="MutualOnly">双方向のみ</option>
                     @foreach (var brand in Brands)
                     {
                         <option value="@brand">@brand</option>
@@ -28,27 +26,28 @@
                 </select>
             </div>
             <div class="control-group">
-                <label>名前で検索：</label>
-                @* 演出：入力するたびに即座に反応いたしますわ *@
-                <input type="text" @oninput="OnSearchInput" class="form-control w-auto d-inline" placeholder="アイドル名を入力..." />
-            </div>
-            <div class="control-group">
-                <button class="btn btn-outline-primary ms-2" @onclick="RerunLayout">
-                    ランダムに再配置
-                </button>
-            </div>
-            <div class="control-group">
                 <label>表示モード：</label>
                 <select @onchange="OnModeChanged" class="form-select w-auto d-inline">
                     <option value="Standard">通常モード</option>
-                    <option value="InterBrand">同ブランド同士を非表示</option>
+                    <option value="SameBrandOnly">ブランド内のみ表示</option>
+                    <option value="HideFromSelf">自分からの矢印を非表示</option>
+                    <option value="HideSameBrand">同ブランドへの矢印を非表示</option>
+                    <option value="MutualOnly">双方向のみ表示</option>
                 </select>
             </div>
+            <div class="control-group">
+                <label>名前で検索：</label>
+                <input type="text" @oninput="OnSearchInput" class="form-control w-auto d-inline" placeholder="アイドル名を入力..." />
+            </div>
+            <div class="control-group">
+                <button class="btn btn-outline-primary" @onclick="RerunLayout">
+                    ランダムに再配置
+                </button>
+            </div>
             <div class="source-credit">
-                ソース：<a href="https://idollist.idolmaster-official.jp/" target="_blank" rel="noopener noreferrer">アイドル名鑑</a>（2025/12月時点）
+                ソース：<a href="https://idollist.idolmaster-official.jp/" target="_blank" rel="noopener noreferrer">アイドル名名鑑</a>（2025/12月時点）
             </div>
         </div>
-        
     </div>
 
     <div id="cy"></div>
@@ -75,7 +74,7 @@
         {
             _isGraphDrawn = true;
             await RenderGraph();
-            _isLoading = false; // 描画命令を出した後にカーテンを開けますわ
+            _isLoading = false;
             StateHasChanged();
         }
     }
@@ -108,38 +107,36 @@
     private async Task OnFilterChanged(ChangeEventArgs e)
     {
         _selectedBrand = e.Value?.ToString() ?? "All";
-        await ApplyCurrentFilter();
+        await ApplySettings();
     }
 
     private async Task OnModeChanged(ChangeEventArgs e)
     {
         _currentMode = e.Value?.ToString() ?? "Standard";
-        await ApplyCurrentFilter();
+        await ApplySettings();
     }
 
-    private async Task ApplyCurrentFilter()
+    private async Task ApplySettings()
     {
-        if (_currentMode == "InterBrand" && _selectedBrand != "All" && _selectedBrand != "MutualOnly")
-        {
-            // 新しい「架け橋」フィルターを呼び出しますわ
-            await JSRuntime.InvokeVoidAsync("applyIncomingInterBrandFilter", _selectedBrand);
-        }
-        else
-        {
-            // 通常のフィルターですわ
-            await JSRuntime.InvokeVoidAsync("applyBrandFilter", _selectedBrand);
-        }
+        // お嬢様、新しく統合された「applyComplexFilter」を呼び出しますわ
+        await JSRuntime.InvokeVoidAsync("applyComplexFilter", _selectedBrand, _currentMode);
     }
 
     private async Task OnSearchInput(ChangeEventArgs e)
     {
-        // 演出：JavaScript側に名前を伝え、ハイライトさせますわ
         await JSRuntime.InvokeVoidAsync("searchAndHighlight", e.Value?.ToString());
     }
 
     private async Task RerunLayout()
     {
-        // 先ほど作成した JavaScript の関数を呼び出しますわ
         await JSRuntime.InvokeVoidAsync("rerunLayout");
+    }
+
+    public class IdolData
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Brand { get; set; } = "";
+        public List<string> RelatedIds { get; set; } = new();
     }
 }
